@@ -1,7 +1,7 @@
 from agents import Agent, WebSearchTool, ModelSettings
 
 INSTRUCTIONS = (
-    "You are a research assistant. Given a search term, you search the web for that term and "
+    "You are a research assistant. Given a search term and answers to  qualifying questions, you search the web with the given term and addtional information and "
     "produce a concise summary of the results. The summary must 2-3 paragraphs and less than 300 "
     "words. Capture the main points. Write succintly, no need to have complete sentences or good "
     "grammar. This will be consumed by someone synthesizing a report, so its vital you capture the "

@@ -1,20 +1,25 @@
 from agents import Runner, trace, gen_trace_id
+from huggingface_hub import QuestionAnsweringInput
 from search_agent import search_agent
 from planner_agent import planner_agent, WebSearchItem, WebSearchPlan
+from questions_agent import question_agent, QuestionItem, Questions
 from writer_agent import writer_agent, ReportData
 from email_agent import email_agent
 import asyncio
 
 class ResearchManager:
 
-    async def run(self, query: str):
-        """ Run the deep research process, yielding the status updates and the final report"""
+    async def run(self, query: str, answers: str = ""):
+        """Run the deep research process, yielding status updates and the final report.
+
+        answers: optional free-form text with user's clarifications to guide planning/search.
+        """
         trace_id = gen_trace_id()
         with trace("Research trace", trace_id=trace_id):
             print(f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}")
             yield f"View trace: https://platform.openai.com/traces/trace?trace_id={trace_id}"
             print("Starting research...")
-            search_plan = await self.plan_searches(query)
+            search_plan = await self.plan_searches(query, answers)
             yield "Searches planned, starting to search..."     
             search_results = await self.perform_searches(search_plan)
             yield "Searches complete, writing report..."
@@ -24,10 +29,22 @@ class ResearchManager:
             yield "Email sent, research complete"
             yield report.markdown_report
         
-
-    async def plan_searches(self, query: str) -> WebSearchPlan:
+    async def ask_questions(self, query: str) -> Questions:
+        """Generate clarifying questions for the given query."""
+        print("Asking clarifying questions...")
+        result = await Runner.run(
+            question_agent,
+            f"Query: {query}",
+        )
+        questions_model = result.final_output_as(Questions)
+        print(f"Generated {len(questions_model.questions)} questions")
+        return questions_model
+    
+    async def plan_searches(self, query: str, answers: str) -> WebSearchPlan:
         """ Plan the searches to perform for the query """
         print("Planning searches...")
+        query = f"{query}\nAdditional details: {answers}" if answers else query
+        print(query)
         result = await Runner.run(
             planner_agent,
             f"Query: {query}",
